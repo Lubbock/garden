@@ -1,37 +1,30 @@
 package auth
 
-import (
-	"context"
-)
+import "gorm.io/gorm/clause"
 
-func (s *Service) AddDefaultPermission(ctx context.Context, permissionID int64) error {
-	if _, err := s.GetPermission(ctx, permissionID); err != nil {
+func (s *Service) AddDefaultPermission(permissionID int64) error {
+	if _, err := s.GetPermission(permissionID); err != nil {
 		return err
 	}
-	_, err := s.db.ExecContext(ctx,
-		`INSERT OR IGNORE INTO default_permissions (permission_id) VALUES (?)`, permissionID)
-	return err
+	return s.db.Clauses(clause.OnConflict{DoNothing: true}).
+		Create(&DefaultPermission{PermissionID: permissionID}).Error
 }
 
-func (s *Service) RemoveDefaultPermission(ctx context.Context, permissionID int64) error {
-	res, err := s.db.ExecContext(ctx,
-		`DELETE FROM default_permissions WHERE permission_id = ?`, permissionID)
-	if err != nil {
-		return err
+func (s *Service) RemoveDefaultPermission(permissionID int64) error {
+	res := s.db.Delete(&DefaultPermission{}, "permission_id = ?", permissionID)
+	if res.Error != nil {
+		return res.Error
 	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if n == 0 {
+	if res.RowsAffected == 0 {
 		return ErrNotFound
 	}
 	return nil
 }
 
-func (s *Service) ListDefaultPermissions(ctx context.Context) ([]Permission, error) {
-	return s.listPermissions(ctx,
-		`SELECT `+permCols+` FROM permissions p
-		  WHERE p.id IN (SELECT permission_id FROM default_permissions)
-		  ORDER BY p.id`)
+func (s *Service) ListDefaultPermissions() ([]Permission, error) {
+	var out []Permission
+	err := s.db.Model(&Permission{}).
+		Where("id IN (SELECT permission_id FROM default_permissions)").
+		Order("id").Find(&out).Error
+	return out, err
 }

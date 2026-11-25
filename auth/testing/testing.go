@@ -1,32 +1,34 @@
 package testing
 
 import (
-	"context"
-	"database/sql"
 	"testing"
 
 	"github.com/Lubbock/garden/auth"
-	_ "modernc.org/sqlite"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-func OpenMemDB(t testing.TB) *sql.DB {
+func OpenGORM(t testing.TB) *gorm.DB {
 	t.Helper()
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := auth.Open(sqlite.Open(":memory:"), auth.PoolConfig{MaxOpenConns: 1})
 	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
+		t.Fatalf("open gorm: %v", err)
 	}
-	if _, err := db.Exec(`PRAGMA foreign_keys = ON`); err != nil {
-		db.Close()
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("underlying db: %v", err)
+	}
+	t.Cleanup(func() { sqlDB.Close() })
+	if err := db.Exec(`PRAGMA foreign_keys = ON`).Error; err != nil {
 		t.Fatalf("pragma: %v", err)
 	}
-	t.Cleanup(func() { db.Close() })
 	return db
 }
 
 func NewService(t testing.TB) *auth.Service {
 	t.Helper()
-	svc := auth.NewService(OpenMemDB(t))
-	if err := svc.Migrate(context.Background()); err != nil {
+	svc := auth.NewService(OpenGORM(t))
+	if err := svc.Migrate(); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
 	return svc
