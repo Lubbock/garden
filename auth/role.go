@@ -93,11 +93,11 @@ func (s *Service) HasPermissionInRoles(roleIDs []string, code string) (bool, err
 }
 
 func (s *Service) grantedCond(roleIDs []string) *gorm.DB {
-	cond := s.db.Where("id IN (SELECT permission_id FROM default_permissions)")
+	cond := s.db.Where("id IN (SELECT permission_id FROM " + TableDefaultPermissions + ")")
 	if len(roleIDs) == 1 {
-		return cond.Or("id IN (SELECT permission_id FROM role_permissions WHERE role_id = ?)", roleIDs[0])
+		return cond.Or("id IN (SELECT permission_id FROM "+TableRolePermissions+" WHERE role_id = ?)", roleIDs[0])
 	}
-	return cond.Or("id IN (SELECT permission_id FROM role_permissions WHERE role_id IN ?)", roleIDs)
+	return cond.Or("id IN (SELECT permission_id FROM "+TableRolePermissions+" WHERE role_id IN ?)", roleIDs)
 }
 
 func (s *Service) findGranted(roleIDs []string, typ string) ([]Permission, error) {

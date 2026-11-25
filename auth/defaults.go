@@ -24,7 +24,7 @@ func (s *Service) RemoveDefaultPermission(permissionID int64) error {
 func (s *Service) ListDefaultPermissions() ([]Permission, error) {
 	var out []Permission
 	err := s.db.Model(&Permission{}).
-		Where("id IN (SELECT permission_id FROM default_permissions)").
+		Where("id IN (SELECT permission_id FROM " + TableDefaultPermissions + ")").
 		Order("id").Find(&out).Error
 	return out, err
 }

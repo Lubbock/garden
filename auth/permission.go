@@ -13,6 +13,12 @@ const (
 	TypeApproval PermissionType = "approval"
 )
 
+const (
+	TablePermissions        = "sys_permissions"
+	TableRolePermissions    = "sys_role_permissions"
+	TableDefaultPermissions = "sys_default_permissions"
+)
+
 func ValidPermissionType(t PermissionType) bool {
 	switch t {
 	case TypeMenu, TypeButton, TypeApproval:
@@ -30,20 +36,20 @@ type Permission struct {
 	UpdatedAt time.Time      `gorm:"column:updated_at"`
 }
 
-func (Permission) TableName() string { return "permissions" }
+func (Permission) TableName() string { return TablePermissions }
 
 type RolePermission struct {
 	RoleID       string `gorm:"column:role_id;primaryKey"`
 	PermissionID int64  `gorm:"column:permission_id;primaryKey"`
 }
 
-func (RolePermission) TableName() string { return "role_permissions" }
+func (RolePermission) TableName() string { return TableRolePermissions }
 
 type DefaultPermission struct {
 	PermissionID int64 `gorm:"column:permission_id;primaryKey"`
 }
 
-func (DefaultPermission) TableName() string { return "default_permissions" }
+func (DefaultPermission) TableName() string { return TableDefaultPermissions }
 
 var (
 	ErrNotFound      = errors.New("auth: permission not found")
